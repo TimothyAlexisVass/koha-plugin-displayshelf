@@ -1,0 +1,215 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<div class='slideshowFrame'>
+    <div class="fade-in"></div>
+        <a id="[% shelfname %]-left-button" class='left carousel-control'>&lsaquo;</a>
+        <a id="[% shelfname %]-right-button" class='right carousel-control'>&rsaquo;</a>
+    <div id="[% shelfname %]" class='slideshow'>
+        [% FOREACH item IN documents %]
+            <a href="/cgi-bin/koha/opac-detail.pl?biblionumber=[% item.biblionumber %]">
+                <img class="carousel-image" src="[% item.url %]" alt="[% item.title %]" title="[% item.title %]"/>
+            </a>
+        [% END %]
+    </div>
+</div>
+
+<style>
+#[% shelfname %] .carousel-image {
+    margin-right: 10px;
+}
+
+#[% shelfname %] .carousel-image, #[% shelfname %]-left-button, #[% shelfname %]-right-button, .slideshow {
+    height: 250px;
+}
+
+#[% shelfname %]-left-button, #[% shelfname %]-right-button {
+    display: inline;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    opacity: 0.9;
+    top: 20px;
+    border-radius: 0;
+    line-height: 240px;
+    border: 0;
+}
+
+#[% shelfname %]-left-button {
+    left: 0;
+}
+
+#[% shelfname %]-right-button {
+    right: 0;
+}
+
+.slideshowFrame {
+    position: relative;
+    background: white;
+    overflow: hidden;
+    margin: 15px 0;
+}
+
+.slideshow {
+    position: relative;
+    width: max-content;
+}
+
+.fade-in {
+    position: absolute;
+    background: white;
+    z-index: 102;
+    height: 100%;
+    width: 100%;
+    top: 0;
+}
+
+.carousel-control,
+.carousel-caption {
+    background: #cae2d8;
+    cursor: pointer;
+    z-index: 101;
+}
+
+.carousel-caption p {
+    color: black;
+    text-align: center;
+    font-size: 24px;
+}
+
+@media screen and (max-width: 1400px) {
+    #[% shelfname %] .carousel-image, #[% shelfname %]-left-button, #[% shelfname %]-right-button, .slideshow {
+        height: 200px;
+    }
+
+    #[% shelfname %]-left-button, #[% shelfname %]-right-button {
+        line-height: 190px;
+        font-size: 40px;
+    }
+}
+
+@media screen and (max-width: 1100px) {
+    #[% shelfname %] .carousel-image, #[% shelfname %]-left-button, #[% shelfname %]-right-button, .slideshow {
+        height: 150px;
+    }
+
+    #[% shelfname %]-left-button, #[% shelfname %]-right-button {
+        line-height: 140px;
+        font-size: 40px;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    #[% shelfname %] .carousel-image, #[% shelfname %]-left-button, #[% shelfname %]-right-button, .slideshow {
+        height: 120px;
+    }
+
+    #[% shelfname %]-left-button, #[% shelfname %]-right-button {
+        line-height: 110px;
+        font-size: 30px;
+    }
+}
+
+</style>
+
+<!-- This is the slideshow -->
+<script>
+(
+    function($) {
+    var Slide = function(imageFile) {
+         this.image = imageFile;
+    }
+    var Controller = function(container, images) {
+        var slides = [];
+        var controller = this;
+        console.log(container);
+        $("#[% shelfname %]-left-button").bind('mouseup', this, function(event) {
+            event.data.animate('left');
+            return false
+        });
+        $("#[% shelfname %]-right-button").bind('mouseup', this, function(event) {
+            event.data.animate('right');
+            return false
+        });
+        
+        this.frame = 0;
+        this.spacing = 10;
+        this.position = 0;
+        this.distance = 0;
+        this.animate = function(direction) {
+            var frames = 10;
+            var framerate = 30;
+            this.position = parseFloat(container.style.left);
+            
+            if (this.frame === 0) {     
+                if (direction == 'left') {
+                    this.distance = slides[slides.length - 1].image.width + this.spacing;
+                    this.position -= this.distance;
+                    $("#[% shelfname %]").prepend($("#[% shelfname %]").children().last());
+                    slides.unshift(slides.pop());
+                } else {
+                    this.distance = slides[0].image.width + this.spacing;
+                    this.position += this.distance;
+                    $("#[% shelfname %]").append($("#[% shelfname %]").children().first());
+                    slides.push(slides.shift());
+                }
+                container.style.left = this.position + 'px';
+            }
+            var change = this.distance / frames;
+            
+            this.frame += 1;
+            
+            if (direction == 'left') {
+                this.position += change;
+            } else {
+                this.position -= change;
+            }
+            container.style.left = this.position + 'px';
+            
+            if (this.frame === frames) {
+                this.frame = 0;
+            } else {
+                setTimeout(function() {
+                    controller.animate(direction);
+                }, 1000 / framerate)
+            }
+        };
+
+        this.positionImages = function() {
+            // confirm that the images are actually loaded
+            for (let i = 0; i < images.length; i++) {
+                if ((images[i].width === undefined) || ((images[i].complete !== undefined) && (!images[i].complete))) {
+                    return
+                }
+            }
+            
+            // position the slides
+            let maxwidth = 0;
+            for (let i = 0; i < images.length; i++) {
+                slides.push(new Slide(images[i]));
+                if (i > 0 && i < images.length-1) {
+                    maxwidth += images[i].width + this.spacing;
+                }
+            }
+            this.position = - images[0].width - this.spacing;
+            $("#[% shelfname %]").css( 'left', this.position + 'px');
+            $(".slideshowFrame").css( 'max-width', maxwidth + 'px');
+            $(".fade-in").fadeOut(700);
+            clearInterval(controller.initiateController);
+        };
+        this.initiateController = setInterval(function() {
+             controller.positionImages()
+        }, 100)
+    };
+
+    $.fn.Slideshow = function() {
+        this.each(function() {
+            $(this).data('carousel-image', new Controller(this, $('.carousel-image', $(this))))
+        });
+        return this
+    }
+})(jQuery);
+
+$("#[% shelfname %]").Slideshow();
+</script>
